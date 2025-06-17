@@ -44,26 +44,27 @@ else:
     middlewares_actual = middlewares
 print("Middlewares: " + str(middlewares_actual))
 
+# Normalize paths for Windows compatibility
+def norm(path):
+    return path.replace("\\", "/")
+
 re_depends = re.compile('^#include \"(.*)\"\n', re.MULTILINE)
 re_pragma = re.compile('^(.*)#pragma once(.*)\n', re.MULTILINE)
-headers = [x.rsplit(sep, 1)[-1] for x in glob(pt.join(header_path, '*.h*'))]
-headers += ['crow'+sep + x.rsplit(sep, 1)[-1] for x in glob(pt.join(header_path, 'crow'+sep+'*.h*'))]
-headers += [('crow'+sep+'middlewares'+sep + x + '.h') for x in middlewares_actual]
+headers = [norm(x.rsplit(sep, 1)[-1]) for x in glob(pt.join(header_path, '*.h*'))]
+headers += [norm('crow/' + x.rsplit(sep, 1)[-1]) for x in glob(pt.join(header_path, 'crow'+sep+'*.h*'))]
+headers += [norm('crow/middlewares/' + x + '.h') for x in middlewares_actual]
 print(headers)
 edges = defaultdict(list)
 for header in headers:
-    d = open(pt.join(header_path, header), encoding='UTF-8').read()
+    d = open(pt.join(header_path, header.replace('/', sep)), encoding='UTF-8').read()
     match = re_depends.findall(d)
     for m in match:
-        actual_m = m
-        if (osname == 'nt'): #Windows
-            actual_m = m.replace('/', '\\')
-        # m should included before header
+        actual_m = norm(m)
+        # m should be included before header
         edges[actual_m].append(header)
 
 visited = defaultdict(bool)
 order = []
-
 
 
 def dfs(x):
